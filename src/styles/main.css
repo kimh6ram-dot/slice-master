@@ -1,0 +1,409 @@
+/* 썰기의 달인 — 화면 스타일.
+ * 인트로·선택·결과·도전장·대결 화면은 일반 반응형이다: 크기는 실제 CSS px(브라우저 줌에 따라 글자·버튼이 같이 커지고 작아진다),
+ *   넓은 창 = 왼쪽 미리보기 + 오른쪽 정보·조작 열, 좁은 창 = 위아래 한 열. 화면 맞춤 확대·축소(scale)는 쓰지 않는다.
+ * 플레이 화면만 16:9 스테이지(#stage-frame)를 창에 균일 배율로 맞춘다(main.js fitStage가 프레임 크기와 --fw 를 설정).
+ *   HUD·조작은 스테이지 프레임의 가장자리를 기준으로 --fw(프레임 폭)에 비례해 놓인다. */
+:root {
+  --bg: #FFFFFF;
+  --text: #000000;
+  --muted: #777777;
+  --soft-border: #DDDDDD;
+
+  --page-x: 40px;
+  --page-y: 28px;
+  --col-gap: 56px;
+  --btn-h: 64px;
+  --btn2-h: 56px;
+  --title: 44px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body {
+  font-family: "Pretendard Variable", Pretendard, -apple-system, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+body.is-play { background: #3E352D; }                          /* 주방 배경 가장자리색 — 창 비율이 달라 생기는 여백이 튀지 않게 */
+button { font-family: inherit; cursor: pointer; }
+
+/* 세로 화면 플레이(모바일 세로 전용): 진행도(위) · 주방 · 조작 바 · 도움말 · 워터마크를 한 덩어리로(main.js fitStage 가 덩어리를 세로 가운데에 둔다).
+ * 진행도·도움말은 body 의 단색 어두운 배경(#3E352D) 위에 놓여 글자색 대비로 읽힌다(그림자·반투명 배경 없음). */
+.pad-area { display: contents; }
+.pad-help, .rotate-tip, .hud-goal { display: none; }
+body.portrait .stage-frame { overflow: visible; --fs: 14px; --b: 48px; }
+body.portrait .top-center { top: auto; bottom: calc(100% + 10px); max-width: 94vw; width: auto; }
+body.portrait .hint { display: none; }
+body.portrait .hud { flex-direction: column; align-items: center; gap: 2px; text-shadow: none; }
+body.portrait .hud-goal { display: block; font-size: 13px; font-weight: 600; line-height: 1.3; color: #CFC6B8; }       /* 목표: 작게 */
+body.portrait .hud-value { width: auto; font-size: 30px; font-weight: 800; color: #FFFFFF; line-height: 1.15; }      /* 진행: 크고 굵게 */
+body.portrait .hud-value::after { content: '회'; font-size: 16px; font-weight: 700; margin-left: 2px; }
+body.portrait .pad-area { display: flex; flex-direction: column; align-items: stretch; position: absolute; left: 0; right: 0; top: calc(100% + 12px); padding: 0 12px; }
+body.portrait .pad { position: static; left: auto; right: auto; bottom: auto; gap: 12px; align-items: stretch; }
+body.portrait .pad-group { gap: 10px; }
+body.portrait .pad-btn { height: 48px; min-height: 48px; font-size: 18px; border-radius: 6px; }
+body.portrait .pad-group .pad-btn { width: 56px; min-width: 56px; padding: 0; }
+body.portrait .pad-cut { flex: 1 1 auto; min-width: 0; font-size: 18px; }
+body.portrait .pad-help { display: block; margin: 10px 0 0; text-align: center; font-size: 13.5px; line-height: 1.35; color: #D9CDBB; font-weight: 500; }
+body.portrait .pad-help span { display: inline-block; white-space: nowrap; }
+body.portrait .rotate-tip:not([hidden]) { display: block; margin: 4px 0 0; text-align: center; font-size: 13px; line-height: 1.35; color: #B9AD9B; }
+body.portrait .watermark { position: static; transform: none; margin: 8px 0 0; text-align: center; font-size: 11px; font-weight: 500; color: #A59A89; text-shadow: none; }
+
+/* ---------- 화면 공통 (비플레이) ---------- */
+.screen {
+  position: fixed;
+  inset: 0;
+  display: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--bg);
+  z-index: 20;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  grid-template-rows: 1fr auto auto auto 1fr;
+  column-gap: var(--col-gap);
+  padding: var(--page-y) max(var(--page-x), calc((100% - 1240px) / 2));
+}
+.screen.active { display: grid; }
+html.boot-challenge #screen-intro { display: none !important; }
+
+.slot-visual {
+  grid-column: 1; grid-row: 1 / -1; align-self: center;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border: 2px solid #000000;
+  background: #FFFFFF;
+  overflow: hidden;
+}
+.slot-visual > canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.slot-title { grid-column: 2; grid-row: 2; font-size: var(--title); font-weight: 800; line-height: 1.25; text-align: left; }
+.slot-title.main { font-size: calc(var(--title) * 1.4); line-height: 1.2; white-space: nowrap; }   /* 메인 제목은 한 줄 */
+.slot-body { grid-column: 2; grid-row: 3; margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; min-width: 0; }
+.slot-actions { grid-column: 2; grid-row: 4; margin-top: 28px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+.intro-copy { font-size: 22px; font-weight: 500; line-height: 1.5; color: var(--muted); white-space: nowrap; }   /* 서브카피도 한 줄 */
+
+/* 재료 선택 2×2 — 칸 크기 고정(테두리는 항상 2px, 선택 = 색만 바뀜) → 선택·이름 길이로 주변이 움직이지 않는다 */
+.ing-grid { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ing-cell { height: 112px; padding: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: #FFFFFF; border: 2px solid var(--soft-border); border-radius: 4px; color: #000000; min-width: 0; }
+.ing-cell.is-selected { border-color: #000000; background: #FFF4D6; }   /* 선택: 검은 테두리 + 옅은 크림 배경(테두리 두께는 항상 2px → 크기 불변) */
+.ing-cell canvas { display: block; width: 100%; height: 60px; flex: none; }
+.ing-cell .ing-name { max-width: 100%; font-size: 20px; font-weight: 800; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- 버튼 ---------- */
+.cta { width: 100%; height: var(--btn-h); background: #000000; color: #FFFFFF; border: 2px solid #000000; border-radius: 4px; font-size: 22px; font-weight: 700; }
+.cta:active { background: #FFFFFF; color: #000000; }
+.cta[hidden] { display: none; }
+.cta:disabled { background: #BBBBBB; border-color: #BBBBBB; cursor: default; }
+.btn-secondary { width: 100%; height: var(--btn2-h); background: #FFFFFF; color: #000000; border: 2px solid #000000; border-radius: 4px; font-size: 19px; font-weight: 600; }
+.btn-secondary:active { background: #000000; color: #FFFFFF; }
+
+/* ---------- PLAY ---------- */
+#screen-play { background: #3E352D; z-index: 10; padding: 0; overflow: hidden; }
+#screen-play.active { display: block; }
+.stage-frame {
+  position: absolute; left: 50%; top: 50%; width: 960px; height: 540px;
+  transform: translate(-50%, -50%);
+  --fw: 960px;                                                  /* 프레임 폭(px) — fitStage 가 갱신 */
+  --m: clamp(8px, calc(var(--fw) * 0.018), 28px);               /* 가장자리 여백 */
+  --b: clamp(34px, calc(var(--fw) * 0.062), 84px);              /* 조작 버튼 한 변 */
+  --fs: clamp(11px, calc(var(--fw) * 0.02), 32px);              /* 안내문 글자 */
+  overflow: hidden;
+}
+#stage { position: absolute; left: 0; top: 0; display: block; width: 1920px; height: 1080px; transform-origin: 0 0; touch-action: none; }
+/* 상단 중앙: 배경 램프(프레임 높이의 약 2~9%) 아래 단색 벽 위에 안내 문구 → 절단 카운터를 한 열로 쌓는다 */
+.top-center { position: absolute; left: 50%; top: calc(var(--fw) * 0.062); transform: translateX(-50%); width: max-content; max-width: calc(var(--fw) * 0.56); display: flex; flex-direction: column; align-items: center; gap: calc(var(--fs) * 0.35); pointer-events: none; }
+.hint { text-align: center; font-size: var(--fs); font-weight: 600; line-height: 1.3; color: #F3E9DA; text-shadow: 0 1px 3px rgba(0,0,0,0.85), 0 2px 10px rgba(0,0,0,0.8); }
+.hud { display: flex; justify-content: center; text-shadow: 0 2px 8px rgba(0,0,0,0.75); }
+.hud-value { display: inline-block; width: 4.8em; white-space: pre; text-align: center; font-size: calc(var(--fs) * 1.5); font-weight: 800; color: #FFFFFF; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.watermark { position: absolute; left: 50%; bottom: calc(var(--m) * 0.6); transform: translateX(-50%); font-size: calc(var(--fs) * 0.8); font-weight: 600; color: #E3D6C3; pointer-events: none; text-shadow: 0 1px 4px rgba(0,0,0,0.75); white-space: nowrap; }
+
+/* 하단 조작: 왼쪽 [◀ ▶] 이동, 오른쪽 [썰기]. 작은 반투명 버튼 — 누르면 반전 */
+.pad { position: absolute; left: var(--m); right: var(--m); bottom: var(--m); display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; touch-action: none; }
+.pad-group { display: flex; gap: calc(var(--b) * 0.2); }
+.pad-btn { pointer-events: auto; height: var(--b); min-width: calc(var(--b) * 1.15); padding: 0 calc(var(--b) * 0.2); border: 2px solid rgba(255,255,255,0.7); border-radius: calc(var(--b) * 0.2); background: rgba(28,21,15,0.6); color: #FFFFFF; font-size: calc(var(--b) * 0.42); font-weight: 700; line-height: 1; touch-action: none; -webkit-user-select: none; user-select: none; }
+.pad-btn.is-down { background: #FFFFFF; color: #000000; border-color: #FFFFFF; }
+.pad-cut { min-width: calc(var(--b) * 2.1); background: rgba(255,255,255,0.92); color: #000000; border-color: #FFFFFF; font-size: calc(var(--b) * 0.38); font-weight: 800; }
+.pad-cut.is-down { background: rgba(28,21,15,0.85); color: #FFFFFF; }
+
+/* ---------- RESULT ---------- */
+.result-body { gap: 0; }
+.result-score { font-size: 88px; font-weight: 900; line-height: 1; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
+.result-score .unit { font-size: 28px; font-weight: 700; margin-left: 6px; letter-spacing: 0; }
+.result-grade { margin-top: 12px; font-size: 26px; font-weight: 800; line-height: 1.25; }
+.result-comment { margin-top: 6px; font-size: 17px; font-weight: 500; color: var(--muted); line-height: 1.4; }
+.result-mark { position: fixed; right: 24px; bottom: 14px; font-size: 14px; font-weight: 500; color: var(--muted); }
+.result-secondary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }          /* 두 버튼 너비·간격 동일 */
+#screen-result .btn-secondary { border: 0; background: transparent; height: auto; min-height: 44px; font-size: 17px; font-weight: 700; color: #1A1A1A; }   /* 테두리 없는 텍스트 버튼(진한 글자색) */
+#screen-result .btn-secondary:active { background: transparent; color: #000000; }
+#screen-result .result-note { text-align: center; }
+.result-note { font-size: 14px; color: var(--muted); text-align: left; line-height: 1.4; }
+#screen-result.has-battle #btn-challenge { background: #FFFFFF; color: #000000; height: var(--btn2-h); font-size: 19px; font-weight: 600; }
+#screen-result.has-battle #btn-challenge:active { background: #000000; color: #FFFFFF; }
+
+/* ---------- 도전장 · 대결 ---------- */
+.challenge-body { gap: 4px; }
+.challenge-name { font-size: 18px; font-weight: 600; color: var(--muted); line-height: 1.3; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.battle-hint { margin-top: 8px; font-size: 20px; font-weight: 700; line-height: 1.3; }
+.vs-visual { display: flex; flex-direction: column; align-items: stretch; }
+.vs-fig { position: relative; flex: 1 1 0; min-height: 0; }
+.vs-fig canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.vs-name { position: absolute; left: 10px; top: 8px; padding: 2px 8px; background: rgba(255,255,255,0.92); border: 1px solid #000; font-size: 14px; font-weight: 700; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-mid { flex: none; height: 26px; line-height: 26px; text-align: center; font-size: 14px; font-weight: 800; border-top: 1px solid var(--soft-border); border-bottom: 1px solid var(--soft-border); background: #FAFAFA; }
+.vs-scores { font-size: 64px; font-weight: 900; letter-spacing: -1px; line-height: 1.1; display: flex; align-items: baseline; justify-content: flex-start; font-variant-numeric: tabular-nums; }
+.vs-scores .vs-sep { font-size: 22px; font-weight: 800; margin: 0 14px; line-height: 1; letter-spacing: 0; }
+.vs-winner { font-size: 22px; font-weight: 700; }
+.btn-row { display: flex; gap: 8px; }
+.btn-row > * { flex: 1 1 0; min-width: 0; }
+
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); max-width: 86%; padding: 10px 18px; background: #000; color: #fff; font-size: 15px; font-weight: 600; border-radius: 2px; z-index: 60; text-align: center; }
+.toast[hidden] { display: none; }
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+.modal.hidden { display: none !important; }
+.modal-card { width: 100%; max-width: 420px; background: #FFFFFF; border: 1px solid #000000; padding: 22px 18px; display: flex; flex-direction: column; gap: 14px; }
+.modal-title { font-size: 18px; font-weight: 800; text-align: center; }
+.modal-card input { width: 100%; height: 48px; padding: 0 12px; border: 1px solid #000000; border-radius: 2px; font-family: inherit; font-size: 17px; font-weight: 600; color: #000000; background: #FFFFFF; -webkit-user-select: text; user-select: text; }
+.modal-card input:focus { outline: 2px solid #000000; outline-offset: -1px; }
+.modal-card .cta, .modal-card .btn-secondary { height: 48px; font-size: 17px; }
+
+/* ---------- 좁은 창 / 세로 창: 위아래 한 열 ---------- */
+@media (max-width: 719px), (max-aspect-ratio: 5/4) {
+  :root { --page-x: 20px; --page-y: 20px; --title: 30px; --btn-h: 58px; --btn2-h: 52px; }
+  .screen { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: max-content; align-content: start; row-gap: 0; }   /* max-content: 창이 낮아도 행이 줄어들어 이미지·제목이 겹치지 않고, 넘치면 스크롤 */
+  .slot-visual, .slot-title, .slot-body, .slot-actions { grid-column: 1; grid-row: auto; }
+  .slot-visual { align-self: start; max-width: 720px; margin: 0 auto; }
+  .slot-title { margin-top: 18px; }
+  .slot-body { margin-top: 12px; }
+  .slot-actions { margin-top: 18px; padding-bottom: 28px; }
+  .slot-title, .slot-body, .slot-actions { width: 100%; max-width: 720px; margin-left: auto; margin-right: auto; }
+  .slot-title, .slot-body { margin-top: 12px; }
+  .ing-cell { height: 96px; }
+  .ing-cell canvas { height: 48px; }
+  .result-score { font-size: 64px; }
+  .vs-scores { font-size: 48px; }
+  .intro-copy { font-size: 17px; }
+}
+/* 낮은 창(모바일 가로 등): 넓은 배치를 유지하되 세로 치수를 줄인다 */
+@media (max-height: 520px) and (min-width: 720px) and (min-aspect-ratio: 5/4) {
+  :root { --page-y: 12px; --title: 26px; --btn-h: 46px; --btn2-h: 42px; --col-gap: 28px; }
+  .slot-body { margin-top: 10px; }
+  .slot-actions { margin-top: 14px; gap: 8px; }
+  .ing-cell { height: 70px; padding: 4px; gap: 2px; }
+  .ing-cell canvas { height: 34px; }
+  .ing-cell .ing-name { font-size: 15px; }
+  .cta { font-size: 17px; }
+  .btn-secondary { font-size: 15px; }
+  .result-score { font-size: 56px; }
+  .result-grade { font-size: 20px; margin-top: 6px; }
+  .result-comment { font-size: 14px; }
+  .intro-copy { font-size: 16px; }
+  .vs-scores { font-size: 44px; }
+}
+
+
+@media (max-width: 359px) { .slot-title.main { font-size: 34px; } .intro-copy { font-size: 15px; } }   /* 아주 좁은 폰에서도 메인 제목 한 줄 */
+
+/* ---------- 모바일 세로: 메인 · 재료 선택 · 결과 공통 틀 ----------
+ * 세 화면이 같은 좌우 여백(18px)·콘텐츠 폭(80%)·가운데 정렬을 쓰고, 메인 버튼의 위치(--btn-bottom: 화면 아래에서 버튼 아래끝까지)를 공유한다.
+ * 화면별로 세로 가운데 정렬하지 않고, 위 콘텐츠를 아래(버튼 쪽)로 붙여 쌓는다(첫 요소 margin-top:auto + 공통 padding-bottom) → 콘텐츠 높이와 무관하게 버튼 위치가 같다.
+ * 기준 위치 = 메인 화면의 현재 배치(이미지·제목·설명·버튼 그룹을 세로 중앙에 둔 결과). 콘텐츠가 넘치면 버튼은 콘텐츠 다음에 이어지고 세로 스크롤된다(하단 고정 아님). */
+@media (max-width: 719px) and (orientation: portrait) {
+  .screen { --cw: calc((100vw - 36px) * 0.8); --vis: calc(var(--cw) / 1.6); --btn-bottom: calc(50dvh - var(--vis) / 2 - 72.75px); --cta-h: 46.4px; }
+  #screen-intro.active, #screen-select.active, #screen-result.active {
+    display: flex; flex-direction: column; align-items: stretch;
+    height: 100vh; height: 100dvh;
+    padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(16px, var(--pb, var(--btn-bottom))) max(18px, env(safe-area-inset-left));
+  }
+  #screen-result.active { --pb: calc(var(--btn-bottom) - 48px); }                 /* 메인 버튼 아래에 [다시 썰기][재료 바꾸기] 한 줄(44 + 간격 4) */
+  #screen-result.has-battle.active { --pb: calc(var(--btn-bottom) - 96px); }      /* 도전으로 들어온 판: 도전장 버튼 한 줄 더 */
+  #screen-intro > *, #screen-select > *, #screen-result > * { flex: none; max-width: none; }
+  #screen-intro > .slot-visual, #screen-select > .slot-visual, #screen-result > .slot-visual { margin-top: auto; margin-bottom: 0; }
+
+  /* 메인·재료 선택: 내용 전체 20% 축소(크기·글자·간격), 폭 80% 가운데 */
+  #screen-intro.active > *, #screen-select.active > * { zoom: 0.8; width: 80%; margin-left: auto; margin-right: auto; }
+  #screen-intro > .slot-title { margin-top: 20px; margin-bottom: 0; }
+  #screen-intro > .slot-body { margin-top: 8px; }
+  #screen-intro > .slot-actions, #screen-select > .slot-actions { margin-top: 20px; margin-bottom: 0; padding-bottom: 0; }
+  #screen-select > .slot-title { margin-top: 12px; }
+  #screen-select > .slot-body { margin-top: 10px; }
+
+  /* 결과: 토끼 셰프 → 점수·심사평·두께 → 메인 버튼(메인과 같은 폭·높이·글자) → 텍스트 버튼 */
+  #screen-result > * { width: 100%; margin-left: 0; margin-right: 0; }
+  #screen-result.active > .slot-visual { width: min(100%, max(120px, calc((100dvh - var(--btn-bottom) - var(--cta-h) - 166px) * 0.8838))); margin-left: auto; margin-right: auto; }
+  #screen-result > .slot-body { margin-top: 22px; }                                     /* 결과 텍스트 자리는 처음부터 확보(공개 전엔 visibility:hidden) */
+  #screen-result.active > .slot-actions { position: relative; width: 80%; margin: 22px auto 0; padding-bottom: 0; }
+  #screen-result .cta { height: var(--cta-h); font-size: 17.6px; border-radius: 4px; }
+  #screen-result.active .btn-secondary { height: 44px; min-height: 44px; }
+  #screen-result.has-battle #btn-challenge { height: 44px; font-size: 16px; }
+  #screen-result .result-note { position: absolute; left: 0; right: 0; top: 100%; margin-top: 8px; }   /* 버튼 그룹 아래(자리 차지 안 함) */
+  #screen-result > .result-mark { position: fixed; left: 0; right: 0; bottom: max(8px, env(safe-area-inset-bottom)); text-align: center; font-size: 11px; margin: 0; width: auto; pointer-events: none; }   /* 화면 맨 아래 */
+}
+@media (max-width: 719px), (max-aspect-ratio: 5/4) {
+  #screen-result .slot-title, #screen-result .slot-body, #screen-result .result-score, #screen-result .result-grade, #screen-result .result-comment, #screen-result .result-note { text-align: center; }
+  #screen-result .slot-body { align-items: center; }
+}
+
+/* 결과 텍스트 위계: 점수(가장 큼) → 심사평 → 두께 정보(작은 회색) */
+@media (max-width: 719px), (max-aspect-ratio: 5/4) {
+  #screen-result .result-score { font-size: 54px; letter-spacing: -1px; }
+  #screen-result .result-score .unit { font-size: 19px; margin-left: 4px; }
+  #screen-result .result-grade { margin-top: 5px; font-size: 19px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+  #screen-result .result-comment { margin-top: 5px; font-size: 12.5px; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+  #screen-result .slot-actions { gap: 4px; }
+  #screen-result .result-note { font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
+}
+
+/* 도전장 화면도 같은 방식: 이미지 → 제목 → 이름·점수·한마디 → 버튼을 한 그룹으로 묶어 화면 세로 중앙에 두고 텍스트는 가운데 정렬 */
+@media (max-width: 719px) and (orientation: portrait) {
+  #screen-challenge.active {
+    display: flex; flex-direction: column; align-items: stretch;
+    height: 100vh; height: 100dvh;
+    padding: max(16px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  }
+  #screen-challenge > * { flex: none; width: 100%; max-width: none; margin-left: 0; margin-right: 0; }
+  #screen-challenge > .slot-visual { margin-top: auto; margin-bottom: 0; }
+  #screen-challenge > .slot-title { margin-top: 20px; margin-bottom: 0; }
+  #screen-challenge > .slot-body { margin-top: 10px; }
+  #screen-challenge > .slot-actions { margin-top: 24px; margin-bottom: auto; padding-bottom: 0; }
+}
+@media (max-width: 719px), (max-aspect-ratio: 5/4) {
+  #screen-challenge .slot-title, #screen-challenge .slot-body, #screen-challenge .challenge-name, #screen-challenge .result-score, #screen-challenge .battle-hint { text-align: center; }
+  #screen-challenge .slot-body { align-items: center; }
+  #screen-challenge .slot-title { white-space: nowrap; font-size: min(var(--title), 8vw); }   /* 좁은 폰에서도 제목 한 줄 */
+  #screen-challenge .battle-hint { margin-top: 12px; }
+}
+
+/* 메인 화면이 한 열(이미지 아래에 텍스트가 쌓임)로 바뀌면 — 기기와 무관하게 창 너비로 판단 — 제목·설명을 이미지 박스 가로 중앙선에 맞춰 줄마다 가운데 정렬한다.
+ * 넓은 창의 좌우 2열에서는 기존 왼쪽 정렬 유지. 시작하기 버튼은 전체 폭 그대로. */
+@media (max-width: 719px), (max-aspect-ratio: 5/4) {
+  #screen-intro .slot-title, #screen-intro .slot-body, #screen-intro .intro-copy, #screen-select .slot-title { text-align: center; }
+  #screen-intro .slot-body { align-items: center; }
+}
+
+/* ---------- 엔딩(결과) 화면: 토끼 셰프 접시 장면 + 재료 공개 뒤에 나타나는 점수·평가 ---------- */
+#screen-result .slot-visual, #screen-challenge .slot-visual {
+  aspect-ratio: 1179 / 1334; border: 0; background: transparent; overflow: visible;
+  width: min(100%, calc((100vh - 2 * var(--page-y)) * 0.8838)); width: min(100%, calc((100dvh - 2 * var(--page-y)) * 0.8838));
+  justify-self: center;
+}
+#screen-result .result-body, #screen-challenge .challenge-body { transition: opacity 0.35s ease, transform 0.35s ease; }
+#screen-result.reveal-pending .result-body, #screen-challenge.reveal-pending .challenge-body { opacity: 0; transform: translateY(8px); visibility: hidden; }   /* 재료가 공개되기 전에는 점수·평가를 숨김(자리는 유지) */
+@media (max-width: 719px), (max-aspect-ratio: 5/4) {
+  #screen-result .slot-visual { width: min(100%, 720px, calc(64dvh * 0.8838)); margin-left: auto; margin-right: auto; }   /* (모바일 세로는 위 공통 틀이 덮어씀) */
+  #screen-challenge .slot-visual { width: min(100%, 720px, calc(50dvh * 0.8838)); margin-left: auto; margin-right: auto; }
+}
+
+/* ---------- 모바일 가로(낮은 가로 화면): 메인 · 재료 선택 · 결과 — 왼쪽 이미지 / 오른쪽 UI 두 열 ----------
+ * 세로·가로 플레이 화면은 건드리지 않는다. 세 화면이 같은 2열 그리드(열 간격 24px)를 쓴다.
+ * 기준선: 메인·재료 선택은 왼쪽 이미지 프레임의 위·아래 끝과 오른쪽 열(제목 상단 / 검은 버튼 하단)이 정확히 맞는다.
+ *   이미지 프레임 = 열 폭과 (높이 - 138px)로 정한 크기(--imgw/--imgh), 상하 가운데 → 프레임 하단 = 검은 버튼 하단. 결과창도 검은 버튼 하단이 같은 선(보조 버튼 한 줄 48px 은 그 아래).
+ * 낮아서 모자라면 세로 스크롤(하단 고정 아님). */
+@media (orientation: landscape) and (max-height: 520px) {
+  #screen-intro, #screen-select, #screen-result {
+    --pl: max(18px, env(safe-area-inset-left)); --pr: max(18px, env(safe-area-inset-right));
+    --colw: calc((100vw - var(--pl) - var(--pr) - 24px) * 1.25 / 2.25);                  /* 왼쪽 열 폭(오른쪽은 나머지) */
+    --imgw: min(var(--colw), calc((100dvh - 138px) * 1.6)); --imgh: calc(var(--imgw) / 1.6);  /* 메인·선택 이미지 프레임(16:10) */
+    --gapb: calc((100dvh - 42px - var(--imgh)) / 2);                                       /* 프레임 아래 ~ 콘텐츠 영역 끝 거리 = 버튼 아래 여백 */
+    --title: 22px; --btn-h: 44px;
+  }
+  #screen-intro.active, #screen-select.active, #screen-result.active {
+    display: grid; grid-template-columns: var(--colw) minmax(0, 1fr); grid-template-rows: 1fr auto auto auto var(--gapb); grid-auto-rows: auto;
+    column-gap: 24px; row-gap: 0; align-content: stretch;
+    height: 100vh; height: 100dvh;
+    padding: 12px var(--pr) 30px var(--pl);
+  }
+  #screen-result.active { grid-template-rows: 1fr auto auto auto calc(var(--gapb) - 48px); }   /* 결과: 보조 버튼 한 줄(48px)만큼 위로 → 검은 버튼 하단이 같은 선 */
+  #screen-intro .slot-visual, #screen-select .slot-visual { grid-column: 1; grid-row: 1 / -1; align-self: center; justify-self: center; width: var(--imgw); max-width: none; margin: 0; }
+  #screen-result .slot-visual { grid-column: 1; grid-row: 1 / -1; align-self: center; justify-self: center; width: min(100%, calc((100dvh - 42px) * 0.8838)); max-width: none; margin: 0; }
+  #screen-intro .slot-title, #screen-select .slot-title { grid-column: 2; grid-row: 2; width: 100%; max-width: none; margin: 0; text-align: left; }
+  #screen-intro .slot-body, #screen-select .slot-body, #screen-result .slot-body { grid-column: 2; grid-row: 3; width: 100%; max-width: none; margin: 0; align-items: flex-start; text-align: left; }
+  #screen-intro .slot-actions, #screen-select .slot-actions, #screen-result .slot-actions { grid-column: 2; grid-row: 4; position: relative; width: 100%; max-width: none; margin: 0; padding-bottom: 0; gap: 4px; }
+  #screen-intro .cta, #screen-select .cta, #screen-result .cta { height: 44px; font-size: 17px; border-radius: 4px; }
+
+  /* 메인: 제목 → (12) → 설명(한 그룹) … (여백) … 버튼(기준선 고정), 오른쪽 열 왼쪽 정렬 */
+  #screen-intro .slot-title.main { font-size: 28px; line-height: 1.2; text-align: left; }
+  #screen-intro .slot-body { margin-top: 12px; }
+  #screen-intro .intro-copy { font-size: 15px; line-height: 1.5; white-space: normal; text-align: left; }
+  #screen-intro .slot-actions { margin-top: clamp(12px, calc(100dvh - 337px), 38px); }   /* 텍스트 그룹 ↔ 버튼 32~40px(375px 높이에서 38). 버튼은 아래 기준선에 고정돼 있어 그룹만 위로 올라가고, 낮아지면 이 여백부터 줄어든다 */
+
+  /* 재료 선택: 제목 상단 = 이미지 상단, 버튼 하단 = 이미지 하단. 제목 28 + 8 + 카드 영역 + 10 + 버튼 44 = 이미지 높이 → 카드 높이는 남는 높이를 2행으로 나눔(선택 상태와 무관, 테두리 2px 고정) */
+  #screen-select .slot-title { height: 28px; font-size: 22px; line-height: 28px; }
+  #screen-select .slot-body { margin-top: 8px; height: max(104px, calc(var(--imgh) - 90px)); }
+  #screen-select .ing-grid { height: 100%; gap: 8px; grid-template-rows: 1fr 1fr; }
+  #screen-select .ing-cell { height: auto; min-height: 0; padding: 4px; gap: 2px; }
+  #screen-select .ing-cell canvas { height: auto; flex: 1 1 0; min-height: 0; }
+  #screen-select .ing-cell .ing-name { font-size: 14px; line-height: 1.2; }
+  #screen-select .slot-actions { margin-top: 10px; }
+
+  /* 결과: 점수·심사평·두께 → (14) 검은 버튼 → 텍스트 버튼 */
+  #screen-result .slot-actions { margin-top: 14px; }
+  #screen-result .result-score { font-size: 48px; text-align: left; letter-spacing: -1px; }
+  #screen-result .result-score .unit { font-size: 17px; margin-left: 4px; }
+  #screen-result .result-grade { margin-top: 5px; font-size: 18px; font-weight: 600; text-align: left; }
+  #screen-result .result-comment { margin-top: 5px; font-size: 12.5px; text-align: left; }
+  #screen-result .result-note { position: absolute; left: 0; right: 0; top: 100%; margin-top: 6px; text-align: left; }
+  #screen-result .btn-secondary { height: 44px; min-height: 44px; }
+  #screen-result.has-battle #btn-challenge { height: 44px; font-size: 16px; }
+  #screen-result .result-mark { position: fixed; right: var(--pr); bottom: 8px; left: auto; font-size: 11px; }
+}
+
+/* ---------- PC(넓은 창): 메인 · 재료 선택 · 결과 — 최대 1100px 2열(왼쪽 이미지 / 오른쪽 UI), 가운데 배치 ----------
+ * 모바일 가로와 같은 기준선 규칙: 메인·재료 선택은 왼쪽 이미지 프레임 하단 = 오른쪽 검은 버튼 하단, 재료 선택은 제목 상단 = 프레임 상단.
+ * 결과창의 검은 버튼도 같은 선(보조 버튼 한 줄이 그 아래). 창을 세로로 좁히면(가로:세로 < 5:4) 위의 일반 1열 규칙(이미지 위·텍스트 아래, 가운데 정렬)으로 전환된다.
+ * 모자라면(낮은 창) 세로 스크롤. */
+@media (min-width: 720px) and (min-aspect-ratio: 5/4) and (min-height: 521px) {
+  #screen-intro, #screen-select, #screen-result {
+    --padx: max(24px, calc((100vw - 1100px) / 2)); --pady: 32px; --cgap: clamp(32px, 5vw, 64px);
+    --colw: calc((100vw - 2 * var(--padx) - var(--cgap)) * 1.15 / 2.15);                      /* 왼쪽 열 폭(세 화면 공통) */
+    --imgw: min(var(--colw), calc((100dvh - 172px) * 1.6)); --imgh: calc(var(--imgw) / 1.6);  /* 메인·선택 이미지 프레임(16:10) */
+    --gapb: calc((100dvh - 2 * var(--pady) - var(--imgh)) / 2);                               /* 프레임 아래 ~ 영역 끝 = 버튼 아래 여백 */
+    --btnh: 52px; --secH: 48px;
+  }
+  #screen-intro.active, #screen-select.active, #screen-result.active {
+    display: grid; grid-template-columns: var(--colw) minmax(0, 1fr); grid-template-rows: 1fr auto auto auto var(--gapb); grid-auto-rows: auto;
+    column-gap: var(--cgap); row-gap: 0; align-content: stretch;
+    height: 100vh; height: 100dvh;
+    padding: var(--pady) var(--padx);
+  }
+  #screen-result.active { grid-template-rows: 1fr auto auto auto calc(var(--gapb) - var(--secH) - 6px); }   /* 보조 버튼 한 줄만큼 위로 → 검은 버튼 하단이 같은 선 */
+  #screen-intro .slot-visual, #screen-select .slot-visual { grid-column: 1; grid-row: 1 / -1; align-self: center; justify-self: center; width: var(--imgw); max-width: none; margin: 0; }
+  #screen-result .slot-visual { grid-column: 1; grid-row: 1 / -1; align-self: center; justify-self: center; width: min(100%, calc((100dvh - 2 * var(--pady)) * 0.8838)); max-width: none; margin: 0; }
+  #screen-intro .slot-title, #screen-select .slot-title { grid-column: 2; grid-row: 2; width: 100%; margin: 0; text-align: left; }
+  #screen-intro .slot-body, #screen-select .slot-body, #screen-result .slot-body { grid-column: 2; grid-row: 3; width: 100%; margin: 0; align-items: flex-start; text-align: left; }
+  #screen-intro .slot-actions, #screen-select .slot-actions, #screen-result .slot-actions { grid-column: 2; grid-row: 4; position: relative; width: 100%; margin: 0; padding-bottom: 0; gap: 6px; }
+  #screen-intro .cta, #screen-select .cta, #screen-result .cta { height: var(--btnh); font-size: 20px; border-radius: 4px; }
+
+  /* 메인: 제목 → (14) → 설명 → (36) → 버튼 */
+  #screen-intro .slot-title.main { font-size: clamp(32px, 3.2vw, 44px); line-height: 1.2; text-align: left; }
+  #screen-intro .slot-body { margin-top: 14px; }
+  #screen-intro .intro-copy { font-size: clamp(15px, 1.25vw, 17px); line-height: 1.5; white-space: normal; text-align: left; }
+  #screen-intro .slot-actions { margin-top: 36px; }
+
+  /* 재료 선택: 제목 36 + 12 + 카드 영역 + 16 + 버튼 = 이미지 높이 → 제목 상단 = 프레임 상단, 버튼 하단 = 프레임 하단 */
+  #screen-select .slot-title { height: 36px; font-size: clamp(24px, 2.2vw, 30px); line-height: 36px; }
+  #screen-select .slot-body { margin-top: 12px; height: max(150px, calc(var(--imgh) - 36px - 12px - 16px - var(--btnh))); }
+  #screen-select .ing-grid { height: 100%; gap: 10px; grid-template-rows: 1fr 1fr; }
+  #screen-select .ing-cell { height: auto; min-height: 0; padding: 6px; gap: 4px; }
+  #screen-select .ing-cell canvas { height: auto; flex: 1 1 0; min-height: 0; }
+  #screen-select .ing-cell .ing-name { font-size: 18px; line-height: 1.2; }
+  #screen-select .slot-actions { margin-top: 16px; }
+
+  /* 결과: 점수(가장 큼) → 심사평 → 두께 → (20) 검은 버튼 → 텍스트 버튼 */
+  #screen-result .slot-actions { margin-top: 20px; }
+  #screen-result .result-score { font-size: clamp(56px, 5.4vw, 76px); text-align: left; letter-spacing: -2px; }
+  #screen-result .result-score .unit { font-size: 24px; margin-left: 6px; }
+  #screen-result .result-grade { margin-top: 8px; font-size: clamp(20px, 1.9vw, 26px); font-weight: 700; text-align: left; line-height: 1.3; }
+  #screen-result .result-comment { margin-top: 6px; font-size: 15px; font-weight: 500; text-align: left; }
+  #screen-result .result-note { position: absolute; left: 0; right: 0; top: 100%; margin-top: 8px; text-align: left; }
+  #screen-result .btn-secondary { height: var(--secH); min-height: 44px; }
+  #screen-result.has-battle #btn-challenge { height: var(--secH); font-size: 17px; }
+}
+
+/* 소리 켜기/끄기 — 모든 화면 오른쪽 위 */
+.mute-btn { position: fixed; top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); z-index: 45; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #000; background: rgba(255,255,255,0.92); font-size: 19px; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
+body.is-play .mute-btn { border-color: rgba(255,255,255,0.7); background: rgba(28,21,15,0.6); }

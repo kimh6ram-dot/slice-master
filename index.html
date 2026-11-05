@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>썰기의 달인</title>
+<meta property="og:title" content="썰기의 달인">
+<meta property="og:description" content="재료를 최대한 일정한 두께로 썰어보세요.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="src/styles/main.css" />
+</head>
+<body>
+  <script>if (/^#battle\//.test(location.hash)) document.documentElement.classList.add('boot-challenge');</script>
+
+  <!-- 인트로·선택·결과·도전장·대결 화면은 일반 반응형(넓은 창: 왼쪽 미리보기 + 오른쪽 정보·조작 / 좁은 창: 위아래).
+       플레이 화면만 16:9 스테이지를 창에 균일 배율로 맞춘다(main.js fitStage). -->
+
+  <!-- INTRO : 비주얼 → 제목 → 설명 → [시작하기] -->
+  <section id="screen-intro" class="screen active">
+    <div class="slot-visual"><canvas id="intro-canvas"></canvas></div>
+    <h1 class="slot-title main">일정하게 썰으세요</h1>
+    <div class="slot-body">
+      <p class="intro-copy">정해진 횟수로 최대한 일정하게 썰어보세요.</p>
+    </div>
+    <div class="slot-actions"><button id="btn-start" class="cta" type="button">시작하기</button></div>
+  </section>
+
+  <!-- SELECT : 선택한 재료 미리보기 → 제목 → 2×2 그리드 → [시작하기] (제목·그리드·버튼이 같은 열) -->
+  <section id="screen-select" class="screen">
+    <div class="slot-visual"><canvas id="select-canvas"></canvas></div>
+    <h2 class="slot-title">재료를 선택하세요</h2>
+    <div class="slot-body"><div class="ing-grid" id="ing-grid"></div></div>
+    <div class="slot-actions"><button id="btn-play" class="cta" type="button">시작하기</button></div>
+  </section>
+
+  <!-- PLAY : 16:9 스테이지(주방 배경·도마·재료·칼) + 스테이지 가장자리 기준 HUD·조작 -->
+  <section id="screen-play" class="screen">
+    <div class="stage-frame" id="stage-frame">
+      <canvas id="stage"></canvas>
+      <div class="top-center">                                    <!-- 배경 램프 아래: 안내 문구 → 절단 카운터 (한 열로 쌓아 서로 겹치지 않는다) -->
+        <p class="hint" id="hint"></p>
+        <div class="hud"><span class="hud-goal" id="hud-goal"></span><span class="hud-value" id="hud-cuts">0 / 9</span></div>
+      </div>
+      <div class="pad-area" id="pad-area">                      <!-- 가로: 프레임 안 오버레이(display:contents) / 세로: 도마 바로 아래 조작 영역 -->
+      <div class="pad" id="pad">
+        <div class="pad-group">
+          <button class="pad-btn" type="button" data-act="left" aria-label="칼 왼쪽 이동 (←)">◀</button>
+          <button class="pad-btn" type="button" data-act="right" aria-label="칼 오른쪽 이동 (→)">▶</button>
+        </div>
+        <button class="pad-btn pad-cut" type="button" data-act="cut" aria-label="썰기 (SPACE)">썰기</button>
+      </div>
+      <p class="pad-help"><span>◀ ▶ 칼 이동 ·</span> <span>재료는 드래그</span></p>
+      <p class="rotate-tip" id="rotate-tip" hidden>가로로 돌리면 도마가 더 넓게 보여요</p>
+      <p class="watermark">@ccojik.dh</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULT : 비주얼(썰린 재료) → 제목 → 점수·등급·한 줄 → [도전장] → [다시 썰기][재료 바꾸기] -->
+  <section id="screen-result" class="screen">
+    <div class="slot-visual"><canvas id="result-canvas"></canvas></div>
+    <div class="slot-body result-body" id="result-body">
+      <div class="result-score" id="result-score">0<span class="unit">점</span></div>
+      <div class="result-grade" id="result-grade"></div>
+      <div class="result-comment" id="result-detail"></div>
+    </div>
+    <div class="slot-actions">
+      <button id="btn-battle-result" class="cta" type="button" hidden>대결 결과 보기</button>
+      <button id="btn-challenge" class="cta" type="button">친구에게 도전장 보내기</button>
+      <div class="result-secondary">
+        <button id="btn-again" class="btn-secondary" type="button">다시 썰기</button>
+        <button id="btn-change" class="btn-secondary" type="button">재료 바꾸기</button>
+      </div>
+      <p class="result-note" id="challenge-note" hidden></p>
+    </div>
+    <p class="result-mark">@ccojik.dh</p>
+  </section>
+
+  <!-- CHALLENGE (도전장 링크로 진입): 비주얼(친구가 썬 모습) → 제목 → 기록 → [도전 시작] -->
+  <section id="screen-challenge" class="screen">
+    <div class="slot-visual"><canvas id="challenge-canvas"></canvas></div>
+    <h2 class="slot-title">도전장이 도착했습니다</h2>
+    <div class="slot-body challenge-body">
+      <p id="challenge-name" class="challenge-name">친구의 기록</p>
+      <div id="challenge-score" class="result-score">0<span class="unit">점</span></div>
+      <p class="battle-hint">이길 수 있으면 해보세요.</p>
+    </div>
+    <div class="slot-actions"><button id="btn-challenge-start" class="cta" type="button">도전 시작</button></div>
+  </section>
+
+  <!-- BATTLE RESULT: 비주얼(친구 / 나) → 점수 VS 점수 → 승패 → [다시 붙기] -->
+  <section id="screen-battle" class="screen">
+    <div class="slot-visual vs-visual">
+      <div class="vs-fig"><canvas id="vs-a-canvas"></canvas><span id="vs-a-name" class="vs-name"></span></div>
+      <span class="vs-mid">VS</span>
+      <div class="vs-fig"><canvas id="vs-b-canvas"></canvas><span id="vs-b-name" class="vs-name"></span></div>
+    </div>
+    <h2 class="slot-title vs-scores"><span id="vs-a-score">0</span><span class="vs-sep">VS</span><span id="vs-b-score">0</span></h2>
+    <div class="slot-body"><p id="vs-winner" class="vs-winner"></p></div>
+    <div class="slot-actions">
+      <button id="btn-rematch" class="cta" type="button">다시 붙기</button>
+      <button id="btn-vs-detail" class="btn-secondary" type="button">내 결과 자세히 보기</button>
+    </div>
+  </section>
+
+  <button id="btn-mute" class="mute-btn" type="button" aria-label="소리 끄기" aria-pressed="false">🔊</button>
+  <p class="toast" id="toast" hidden></p>
+
+  <!-- 도전장에 적을 닉네임 -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <p class="modal-title">도전장에 적을 닉네임</p>
+      <input id="modal-input" type="text" maxlength="12" placeholder="예: 칼질장인" autocomplete="off">
+      <div class="btn-row">
+        <button id="modal-cancel" class="btn-secondary" type="button">취소</button>
+        <button id="modal-ok" class="cta" type="button">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 순서 고정: three → config → slicing → scoring → audio → assets_data → assets → ingredients → renderer → tex3d → mesh3d → view3d → input → battle → share → main -->
+  <script src="vendor/three.min.js"></script>
+  <script src="src/game/config.js"></script>
+  <script src="src/game/slicing.js"></script>
+  <script src="src/game/scoring.js"></script>
+  <script src="src/game/audio.js"></script>
+  <script src="src/game/assets_data.js"></script>
+  <script src="src/game/assets.js"></script>
+  <script src="src/game/ingredients.js"></script>
+  <script src="src/game/renderer.js"></script>
+  <script src="src/game/tex3d.js"></script>
+  <script src="src/game/mesh3d.js"></script>
+  <script src="src/game/view3d.js"></script>
+  <script src="src/game/ending.js"></script>
+  <script src="src/game/input.js"></script>
+  <script src="src/game/battle.js"></script>
+  <script src="src/game/share.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
