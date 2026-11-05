@@ -298,6 +298,11 @@
   // ---------- 도전장 · 대결 ----------
   function drawChallenge() {
     // 결과 화면과 같은 엔딩: 토끼 셰프 접시의 덮개가 열리며 친구가 썬 재료가 공개되고, 그때 이름·점수가 나타난다
+    if (!SL.assets.loaded) {                         // 에셋 디코드 전(링크로 막 열었을 때): 임시 그림·점수를 먼저 보이지 않게 비워 두고, 준비되면(AS.onReady → relayout) 엔딩으로 바로 시작한다
+      $('screen-challenge').classList.add('reveal-pending');
+      var c0 = $('challenge-canvas'); c0.getContext('2d').clearRect(0, 0, c0.width, c0.height);
+      return;
+    }
     if (!SL.ending.state() && SL.ending.supported(challenge.ing)) $('screen-challenge').classList.add('reveal-pending');   // 새로 시작할 때만(창 크기 변경으로 다시 그릴 땐 진행 상태 유지). 에셋 디코드가 늦어도 점수가 먼저 보이지 않는다
     if (SL.ending.show($('challenge-canvas'), challenge.ing, challenge.th, function () { $('screen-challenge').classList.remove('reveal-pending'); })) return;
     $('screen-challenge').classList.remove('reveal-pending');
