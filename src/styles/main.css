@@ -35,7 +35,7 @@ button { font-family: inherit; cursor: pointer; }
 /* 세로 화면 플레이(모바일 세로 전용): 진행도(위) · 주방 · 조작 바 · 도움말 · 워터마크를 한 덩어리로(main.js fitStage 가 덩어리를 세로 가운데에 둔다).
  * 진행도·도움말은 body 의 단색 어두운 배경(#3E352D) 위에 놓여 글자색 대비로 읽힌다(그림자·반투명 배경 없음). */
 .pad-area { display: contents; }
-.pad-help, .rotate-tip, .hud-goal { display: none; }
+.pad-help, .rotate-tip, .hud-goal, .ext-open { display: none; }
 body.portrait .stage-frame { overflow: visible; --fs: 14px; --b: 48px; }
 body.portrait .top-center { top: auto; bottom: calc(100% + 10px); max-width: 94vw; width: auto; }
 body.portrait .hint { display: none; }
@@ -52,6 +52,7 @@ body.portrait .pad-cut { flex: 1 1 auto; min-width: 0; font-size: 18px; }
 body.portrait .pad-help { display: block; margin: 10px 0 0; text-align: center; font-size: 13.5px; line-height: 1.35; color: #D9CDBB; font-weight: 500; }
 body.portrait .pad-help span { display: inline-block; white-space: nowrap; }
 body.portrait .rotate-tip:not([hidden]) { display: block; margin: 4px 0 0; text-align: center; font-size: 13px; line-height: 1.35; color: #B9AD9B; }
+body.portrait .ext-open { display: block; margin: 2px auto 0; min-height: 40px; padding: 0 14px; background: none; border: 0; color: #E3D6C3; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 body.portrait .watermark { position: static; transform: none; margin: 8px 0 0; text-align: center; font-size: 11px; font-weight: 500; color: #A59A89; text-shadow: none; }
 
 /* ---------- 화면 공통 (비플레이) ---------- */
@@ -402,6 +403,13 @@ html.boot-challenge #screen-intro { display: none !important; }
   #screen-result .result-note { position: absolute; left: 0; right: 0; top: 100%; margin-top: 8px; text-align: left; }
   #screen-result .btn-secondary { height: var(--secH); min-height: 44px; }
   #screen-result.has-battle #btn-challenge { height: var(--secH); font-size: 17px; }
+}
+
+/* 모바일 가로 플레이: 이동·썰기 버튼을 크게(화면 높이에 비례, 52~64px) */
+@media (orientation: landscape) and (max-height: 520px) {
+  body:not(.portrait) .stage-frame { --b: clamp(52px, 15vh, 64px); }
+  body:not(.portrait) .pad-btn { min-width: calc(var(--b) * 1.25); }
+  body:not(.portrait) .pad-cut { min-width: calc(var(--b) * 2.4); }
 }
 
 /* 소리 켜기/끄기 — 모든 화면 오른쪽 위 */

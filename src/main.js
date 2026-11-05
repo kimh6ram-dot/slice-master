@@ -91,6 +91,19 @@
     tip.hidden = !on;
   }
 
+  // 인앱 브라우저(카카오톡·인스타 등)에서 기본 브라우저로 열기. 카카오톡은 전용 스킴, 안드로이드는 크롬 intent, 그 외(iOS 등)는 새 창을 시도하고 막히면 주소를 복사해 안내한다
+  function openExternal() {
+    var url = location.href.split('#')[0], ua = navigator.userAgent || '';
+    if (/KAKAOTALK/i.test(ua)) { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url); return; }
+    if (/Android/i.test(ua)) { location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=' + (location.protocol === 'http:' ? 'http' : 'https') + ';package=com.android.chrome;end'; return; }
+    var w = null; try { w = window.open(url, '_blank'); } catch (e) { /* 무시 */ }
+    if (!w) {
+      var done = function () { SL.share.toast('주소를 복사했어요. 사파리·크롬에 붙여넣어 열어주세요'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { SL.share.toast('주소창의 링크를 길게 눌러 복사해주세요'); });
+      else SL.share.toast('주소창의 링크를 길게 눌러 복사해주세요');
+    }
+  }
+
   function startPlay() {
     SL.ending.stop(); $('screen-result').classList.remove('reveal-pending');
     showRotateTip();
@@ -329,6 +342,7 @@
     buildGrid();
     SL.input.bind();
     bindDrag();
+    $('btn-ext').addEventListener('click', openExternal);
     var mb = $('btn-mute');
     function paintMute() { var on = SL.sfx.isMuted(); mb.textContent = on ? '🔇' : '🔊'; mb.setAttribute('aria-pressed', on ? 'true' : 'false'); mb.setAttribute('aria-label', on ? '소리 켜기' : '소리 끄기'); }
     mb.addEventListener('click', function () { SL.sfx.setMuted(!SL.sfx.isMuted()); paintMute(); mb.blur(); });
